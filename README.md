@@ -8,4 +8,6 @@ This repository hosts the solution of a case study related to a real-world data 
 
 ## Results ⚙️
 
-The document explaining the solution and results can be found [here](https://html-preview.github.io/?url=https://github.com/alexgarma/pricing-used-cars-sales/blob/master/notebooks/notebook.html)
+- The result was an XGBoost model with 93% of testing observations in the desired range. I presented findings to an industry data scientist and other judges, making results understandable to both technical and non-technical audiences.
+
+The document explaining the business problem, methodology and results can be found [here](https://html-preview.github.io/?url=https://github.com/alexgarma/pricing-used-cars-sales/blob/master/notebooks/notebook.html). Please, review it.
