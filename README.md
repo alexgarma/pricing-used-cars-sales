@@ -10,4 +10,4 @@ This repository hosts the solution of a case study related to a real-world data 
 
 - The result was an XGBoost model with 93% of testing observations in the desired range. I presented findings to an industry data scientist and other judges, making results understandable to both technical and non-technical audiences.
 
-**The document explaining the business problem, methodology and results can be found [here](https://html-preview.github.io/?url=https://github.com/alexgarma/pricing-used-cars-sales/blob/master/notebooks/notebook.html). Please, review it.**
+**The document explaining the business problem, methodology and results of the Data Science project can be found [here](https://html-preview.github.io/?url=https://github.com/alexgarma/pricing-used-cars-sales/blob/master/notebooks/notebook.html). Please, review it.**
