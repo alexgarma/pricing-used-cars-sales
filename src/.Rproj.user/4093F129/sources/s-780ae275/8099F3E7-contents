@@ -1,0 +1,132 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+## Helpers
+
+```{r}
+install.packages("devtools")
+devtools::install_github("gadenbuie/rsthemes")
+rsthemes::install_rsthemes()
+rstudioapi::applyTheme("Oceanic Plus {rsthemes}")
+```
+
+```{r}
+install.packages("ggridges")
+
+library(tidyverse)
+library(skimr)
+library(janitor)
+library(ggridges)
+
+theme_set(theme_minimal())+
+  theme_update(axis.title = element_blank())
+```
+
+## Data description
+
+| Feature      | Description                                    |
+|--------------|------------------------------------------------|
+| model        | Model name of the Toyota car                   |
+| transmission | Transmission type of the car                   |
+| fuelType     | The fuel type the car engine uses              |
+| year         | Year when the car was launched                 |
+| price        | Price of the car from retailers                |
+| mileage      | Number of miles that the car has been traveled |
+| tax          | Sales tax of the car                           |
+| mpg          | Miles traveled per gallon of fuel consumed     |
+| engineSize   | Size of the engine                             |
+
+: Table 1: Features description
+
+```{r}
+toyota <- read_csv("data/toyota.csv")
+
+toyota %>% 
+  skim_without_charts()
+
+toyota %>% 
+  slice_sample(n = 20)
+
+# Changing column names to snake case
+
+toyota <- toyota %>% 
+  clean_names()
+```
+
+## Exploratory data analysis
+
+```{r}
+# Function to plot numerical and categorical
+plot_num_cat <- function(tbl,num,cat,type){
+  if (type == "box") {
+    tbl %>% 
+      ggplot(aes(x = fct_reorder({{cat}},{{num}}),
+                 y = {{num}}))+
+      geom_boxplot()+
+      coord_flip()
+  }
+  else if(type == "violin"){
+    tbl %>% 
+      ggplot(aes(x = {{num}},
+                 y = fct_reorder({{cat}},{{num}})))+
+      geom_violin()
+  }
+  else if(type == "ridges"){
+    tbl %>% 
+      ggplot(aes(x = {{num}},
+                 y = fct_reorder({{cat}},{{num}})))+
+      stat_density_ridges(quantile_lines = T)
+  }
+}
+```
+
+### Distribution of price
+
+```{r}
+toyota %>% 
+  ggplot(aes(x = price))+
+  geom_histogram(color = "white")
+
+# Log transformation on price 
+toyota %>% 
+  ggplot(aes(x = price))+
+  geom_histogram(color = "White")+
+  scale_x_continuous(trans = "log10")
+```
+
+The distribution of price is not normal, so a log 10  transformation may be needed in order to get more accurate results, so now on we are going to work with the log of the price.
+
+```{r}
+toyota <- toyota %>% 
+  mutate(price_log10 = log10(price))
+```
+
+### Comparing price across categories
+
+#### Price and the diferent car models
+
+```{r}
+toyota %>% 
+  plot_num_cat(price,model, type = "ridges")+
+  scale_x_log10()+
+  theme(axis.title.x = element_text())+
+  labs(x = "Price")+
+  ggtitle("Prices by type of model")
+```
+
+We see a clearly difference in the price range across the model of the car, so we need to consider the model of the car in our modeling process
+
+### Price and transmission
+
+```{r}
+toyota %>% 
+  tabyl(fuel_type)
+
+toyota %>%
+  plot_num_cat(price,transmission, type = "box")
+```
+
+
+

@@ -1,0 +1,273 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+## Helpers
+
+```{r}
+install.packages("devtools")
+devtools::install_github("gadenbuie/rsthemes")
+rsthemes::install_rsthemes()
+rstudioapi::applyTheme("Oceanic Plus {rsthemes}")
+```
+
+```{r}
+install.packages("ggridges")
+install.packages("corrr")
+
+library(tidyverse)
+library(skimr)
+library(janitor)
+library(ggridges)
+library(corrr)
+
+theme_set(theme_minimal())+
+  theme_update(axis.title = element_blank())
+```
+
+## Data description
+
+| Feature      | Description                                    |
+|--------------|------------------------------------------------|
+| model        | Model name of the Toyota car                   |
+| transmission | Transmission type of the car                   |
+| fuelType     | The fuel type the car engine uses              |
+| year         | Year when the car was launched                 |
+| price        | Price of the car from retailers                |
+| mileage      | Number of miles that the car has been traveled |
+| tax          | Sales tax of the car                           |
+| mpg          | Miles traveled per gallon of fuel consumed     |
+| engineSize   | Size of the engine                             |
+
+: Table 1: Features description
+
+```{r}
+toyota <- read_csv("data/toyota.csv")
+
+toyota %>% 
+  skim_without_charts()
+
+toyota %>% 
+  slice_sample(n = 20)
+
+# Changing column names to snake case
+
+toyota <- toyota %>% 
+  clean_names()
+```
+
+## Exploratory data analysis
+
+```{r}
+# Function to plot numerical and categorical
+plot_num_cat <- function(tbl,num,cat,type){
+  if (type == "box") {
+    tbl %>% 
+      ggplot(aes(x = fct_reorder({{cat}},{{num}}),
+                 y = {{num}}))+
+      geom_boxplot()+
+      coord_flip()
+  }
+  else if(type == "violin"){
+    tbl %>% 
+      ggplot(aes(x = {{num}},
+                 y = fct_reorder({{cat}},{{num}})))+
+      geom_violin()
+  }
+  else if(type == "ridges"){
+    tbl %>% 
+      ggplot(aes(x = {{num}},
+                 y = fct_reorder({{cat}},{{num}})))+
+      stat_density_ridges(quantile_lines = T)
+  }
+}
+
+```
+
+### Distribution of price
+
+```{r}
+toyota %>% 
+  ggplot(aes(x = price))+
+  geom_histogram(color = "white")
+
+# Log transformation on price 
+toyota %>% 
+  ggplot(aes(x = price))+
+  geom_histogram(color = "White")+
+  scale_x_continuous(trans = "log10")
+```
+
+The distribution of price is not normal, so a log 10 transformation may be needed in order to get more accurate results, so now on we are going to work with the log of the price.
+
+```{r}
+toyota <- toyota %>% 
+  mutate(price_log10 = log10(price))
+```
+
+### Comparing price across categories
+
+#### Price and the diferent car models
+
+```{r}
+toyota %>% 
+  tabyl(model)
+
+toyota %>% 
+  plot_num_cat(price,model, type = "ridges")+
+  scale_x_log10()+
+  theme(axis.title.x = element_text())+
+  labs(x = "Price")+
+  ggtitle("Prices by type of model")
+```
+
+We see a clearly difference in the price range across the model of the car, so we need to consider the model of the car in our modeling process
+
+### Price and transmission
+
+```{r}
+toyota %>% 
+  tabyl(transmission)
+
+toyota %>%
+  filter(transmission != "Other") %>% 
+  plot_num_cat(price,transmission, type = "box")+
+  scale_y_log10()+
+  ggtitle("Price by transmission type")
+```
+
+Note that there is only one car with transmission type other so we could drop that group.
+
+- Higher prices are associated to automatic cars
+- The difference between semi-auto and manual cars are not that clear.
+
+We could create a new binary variable, to indicate just if a car is automatic or not since there is no appreciable difference between semi-auto and manual cars.
+
+### Price and fueltype
+
+```{r}
+toyota %>% 
+  tabyl(fuel_type)
+
+toyota %>%
+  plot_num_cat(price,fuel_type,type = "box")
+```
+
+Clearly there is a pattern, hybrid type cars have a higher median price than diesel and petrol, but if we look the groups of diesel and other we notice that are under represented in comparison of the hybrid and diesel groups.
+
+So it might be a better approach to consider only Hybryd and Diesel cars and drop the remaining levels to the Other category.
+
+## Prices across the diferent years
+
+
+```{r}
+toyota %>% 
+  ggplot(aes(x = year, y = price, group = year))+
+  geom_boxplot()+
+  scale_y_log10()+
+  ggtitle("Prices by year")
+
+# Note: lineplot with error bar
+```
+
+As expected the median prices have been increasing as the years pass so the year of the car is an important feature in our model.
+
+
+## Comparing prices across numerical variables
+
+### Correlations across numerical variables
+
+```{r}
+toyota %>% 
+  select_if(is.numeric) %>% 
+  select(-price) %>% 
+  correlate() %>% 
+  arrange() %>% 
+  network_plot()
+```
+
+
+### Prices and mileage
+
+```{r}
+toyota %>% 
+  ggplot(aes(x = mileage, y = price))+
+  geom_point()+
+  scale_y_log10()+
+  stat_smooth(method = "lm")+
+  theme(axis.title = element_text())
+```
+
+As expected there is a clear negative relationship in the number of miles traveled with the car price
+
+- On average, the higher the mileage the lower the price.
+
+
+But notice that if we compare this with the prices across years the two variables are capturing the same information. So it would be a good practice to drop one of this correlated variables
+
+```{r}
+toyota %>% 
+  ggplot(aes(x = mileage, y = year))+
+  geom_jitter()+
+  scale_x_log10()+
+  theme(axis.title = element_text())+
+  ggtitle("Mileage vs Year")
+```
+
+But there is a no linear relationship between mileage and year (BUT IF WE DROP ONE WE MAY NOT NEED THIS)
+
+### Prices and engine size.
+
+```{r}
+toyota %>% 
+  tabyl(engine_size)
+
+toyota %>% 
+  filter(engine_size > 0, engine_size < 4.2) %>% 
+  mutate(engine_size = as.character(engine_size)) %>% 
+  ggplot(aes(x = fct_reorder(engine_size,price),
+             y = price))+
+  geom_boxplot()+
+  scale_y_log10()+
+  theme(axis.title = element_text())
+```
+
+There is a clear pattern higher engine_size, then higher the price of the car on average (engine size of zero and less than 4.2 were omitted because they have only one observation).
+
+
+## Data modeling
+
+With the observed in the EDA we conlude that the most important variable that affect in the log price are:
+
+- Year
+- Mileage
+- Engine size
+- Model
+- Transmission
+- Fuel type
+
+But, we notice that year and mileage essentially capture the same information so we will not consider the mileage. And we wont consider interactions between predictors.
+
+Given that we want to predict the log of the price when a new car arrives based on numerical and categorical variables we have a regression problem. And we are going to compare thee types of models:
+
+- Linear Regression
+- Regularized regression: Since we have a lot of categorical predictors and it may be a best option to let the model "choose" the relevant predictors.
+
+### Spending data budget
+
+we split our data stratifying by Price (wich means that we want to keep almost the same distribution of prices in the train and test sets) keeping 75% of our data to estimate the parameters of our model and 25% to evaluate the model.
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+

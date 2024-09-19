@@ -1,0 +1,31 @@
+{
+    "id": "69E961B6",
+    "path": "/work/files/workspace/notebook.Rmd",
+    "project_path": null,
+    "type": "r_markdown",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1642811387766.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "chunk_output_type": "console",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "32,8",
+        "scrollLine": "16",
+        "rmdVisualMode": "false",
+        "docOutlineVisible": "1",
+        "rmdVisualModeLocation": "1747:1043",
+        "rmdVisualWrapConfigured": "true"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1642824468,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1642824468378,
+    "read_only": false,
+    "read_only_alternatives": []
+}

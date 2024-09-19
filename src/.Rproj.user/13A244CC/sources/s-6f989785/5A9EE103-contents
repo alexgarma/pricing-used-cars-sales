@@ -1,0 +1,95 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+## Helpers
+
+```{r}
+install.packages("devtools")
+devtools::install_github("gadenbuie/rsthemes")
+rsthemes::install_rsthemes()
+rstudioapi::applyTheme("Oceanic Plus {rsthemes}")
+```
+
+```{r}
+install.packages("ggridges")
+
+library(tidyverse)
+library(skimr)
+library(janitor)
+library(ggridges)
+
+theme_set(theme_minimal())
+```
+
+## Data description
+
+| Feature      | Description                                    |
+|--------------|------------------------------------------------|
+| model        | Model name of the Toyota car                   |
+| transmission | Transmission type of the car                   |
+| fuelType     | The fuel type the car engine uses              |
+| year         | Year when the car was launched                 |
+| price        | Price of the car from retailers                |
+| mileage      | Number of miles that the car has been traveled |
+| tax          | Sales tax of the car                           |
+| mpg          | Miles traveled per gallon of fuel consumed     |
+| engineSize   | Size of the engine                             |
+
+: Table 1: Features description
+
+```{r}
+toyota <- read_csv("data/toyota.csv")
+
+toyota %>% 
+  skim_without_charts()
+
+toyota %>% 
+  slice_sample(n = 20)
+
+# Changing column names to snake case
+
+toyota <- toyota %>% 
+  clean_names()
+```
+
+## Exploratory data analysis
+
+```{r}
+# Function to plot numerical and categorical
+
+```
+
+### Distribution of price
+
+```{r}
+toyota %>% 
+  ggplot(aes(x = price))+
+  geom_histogram(color = "white")
+
+# Log transformation on price 
+toyota %>% 
+  ggplot(aes(x = price))+
+  geom_histogram(color = "White")+
+  scale_x_continuous(trans = "log10")
+```
+
+The distribution of price is not normal, so a log 10  transformation may be needed in order to get more accurate results, so now on we are going to work with the log of the price.
+
+```{r}
+toyota <- toyota %>% 
+  mutate(price_log10 = log10(price))
+```
+
+### Comparing price across categories
+
+#### Price across the diferent car models
+
+```{r}
+toyota %>% 
+  ggplot(aes(x = price, y = fct_reorder(model,price)))+
+  stat_density_ridges(quantile_lines = T)+
+  scale_x_log10()
+```
+
